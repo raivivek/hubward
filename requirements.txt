@@ -11,4 +11,3 @@ fabric
 trackhub
 docutils
 pycurl
-functools32
