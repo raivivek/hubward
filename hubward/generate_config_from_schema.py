@@ -138,8 +138,8 @@ def create_config(schema, fout=None):
         indent = '  ' * props.level
 
         # Print out the description as a comment.
-        if 'description' in v:
-            props.out.write('\n%s# %s\n' % (indent, wrap(v['description'])))
+        #  if 'description' in v:
+        #      props.out.write('\n%s# %s\n' % (indent, wrap(v['description'])))
 
         # Describe the possible values of any enums.
         if 'enum' in v:
