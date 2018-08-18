@@ -63,7 +63,7 @@ properties:
                 type: string
                 description: |
                     Host name where tracks will be rsynced. Override at command line with `--host <HOST>`.
-                default: "localhost"
+                default: "$HOSTNAME"
 
             user:
                 type: string

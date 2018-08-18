@@ -510,6 +510,9 @@ class Group(object):
         if user == '$USER':
             user = os.environ.get('USER')
 
+        if host == '$HOSTNAME':
+            host = os.uname().nodename
+
         kwargs = dict(user=user, rsync_options=rsync_options, port=port,
                       staging=staging)
 
