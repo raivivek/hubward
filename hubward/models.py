@@ -8,7 +8,8 @@ import yaml
 import jsonschema
 import subprocess
 from trackhub import Track, default_hub, CompositeTrack, ViewTrack
-from trackhub.upload import upload_hub, upload_track, upload_file
+from trackhub.upload import upload_hub
+from trackhub.helpers import sanitize
 from hubward import utils, liftover
 from hubward.log import log
 
@@ -31,16 +32,18 @@ class Data(object):
         self.obj = obj
         self.reldir = reldir
         self.original = os.path.join(reldir, obj['original'])
-        self.source_url = obj['source']['url']
-        self.source_fn = os.path.join(reldir, 'raw-data', obj['source']['fn'])
         self.processed = os.path.join(reldir, obj['processed'])
         self.description = obj.get('description', "")
         self.label = obj['short_label']
         self.obj.setdefault('long_label', self.label)
         self.type_ = obj['type']
         self.genome = obj['genome']
-        self.script = os.path.join(reldir, obj['script'])
         self.trackinfo = obj.get('trackinfo', {})
+        if obj.get('source'):
+            self.source_url = obj['source']['url']
+            self.source_fn = os.path.join(reldir, 'raw-data', obj['source']['fn'])
+        if obj.get('script'):
+            self.script = os.path.join(reldir, obj['script'])
 
     def __str__(self):
         return yaml.dump(self.obj)
@@ -98,9 +101,9 @@ class Data(object):
         # if processed is a link, then check the LINK time
         if (
             os.path.exists(self.processed) and
-            utils.link_is_newer(self.script, self.processed)
+            utils.link_is_newer(self.original, self.processed)
         ):
-            log("{0.script} is newer than {0.processed}, need to re-run"
+            log("{0.original} is newer than {0.processed}, need to re-run"
                 .format(self), indent=4)
             do_update = True
 
@@ -155,7 +158,7 @@ class Data(object):
 
     def _needs_liftover(self, from_assembly, to_assembly, newfile):
         """
-        Checks to see if liftover is needed based on the 
+        Checks to see if liftover is needed based on the sentinel file
         """
         # Sentinel file encodes assembly conversion; 
         sentinel = self._liftover_sentinel(from_assembly, to_assembly, newfile)
@@ -271,9 +274,12 @@ class Study(object):
 
         valid_readmes = [
             'README.rst',
-            'README',
             'readme.rst',
+            'README.md',
+            'readme.md'
+            'README',
             'readme']
+
         if 'ORIGINAL-STUDY' in contents:
             prefix = os.path.join(self.dirname, 'ORIGINAL-STUDY')
         else:
@@ -357,6 +363,7 @@ class Study(object):
         """
         bigwigs = [i for i in self.tracks if i.type_ == 'bigwig']
         bigbeds = [i for i in self.tracks if i.type_ == 'bigbed']
+        beds = [i for i in self.tracks if i.type_ == 'bed']
         bams = [i for i in self.tracks if i.type_ == 'bam']
 
         # Build the HTML docs
@@ -364,7 +371,7 @@ class Study(object):
         html_string = utils.reST_to_html(
             self.metadata['study'].get('description', '') + '\n' + last_section)
 
-        sanitized_label = utils.sanitize(self.label, strict=True)
+        sanitized_label = sanitize(self.label, strict=True)
 
         # Composite track to hold all subtracks for the study
         composite = CompositeTrack(
@@ -389,7 +396,7 @@ class Study(object):
                 kwargs.setdefault('tracktype', default_tracktype)
                 view.add_tracks(
                     Track(
-                        name=sanitized_label + utils.sanitize(data_obj.label),
+                        name=sanitized_label + sanitize(data_obj.label),
                         short_label=data_obj.label,
                         long_label=data_obj.obj['long_label'],
                         local_fn=data_obj.processed,
@@ -412,6 +419,18 @@ class Study(object):
 
         # Same thing with bigBeds
         if len(bigbeds) > 0:
+            bigbed_view = ViewTrack(
+                name=sanitized_label + 'bigbedviewtrack',
+                view=sanitized_label + 'bigbed_view',
+                short_label=self.label + ' bigbed view',
+                long_label=self.label + ' bigbed view',
+                visibility='dense',
+            )
+            composite.add_view(bed_view)
+            _add_tracks(bigbeds, bigbed_view, 'bigBed 9')
+
+        # for BEDs
+        if len(beds) > 0:
             bed_view = ViewTrack(
                 name=sanitized_label + 'bedviewtrack',
                 view=sanitized_label + 'bed_view',
@@ -420,7 +439,8 @@ class Study(object):
                 visibility='dense',
             )
             composite.add_view(bed_view)
-            _add_tracks(bigbeds, bed_view, 'bigBed 9')
+            _add_tracks(beds, bed_view, 'bed')
+
         # and bams
         if len(bams) > 0:
             bam_view = ViewTrack(
@@ -474,29 +494,26 @@ class Group(object):
         self.genome_ = genome_
         self.trackdb = trackdb
 
-    def upload(self, hub_only=False, host=None, user=None, rsync_options=None,
-               hub_remote=None):
+    def upload(self, host=None, remote_dir=None, user=None, port=None,
+            rsync_options=None, staging=None):
         self.process()
+
+        print(self.group)
 
         if 'server' in self.group:
             host = host or self.group['server'].get('host')
             user = user or self.group['server'].get('user')
-            rsync_options = rsync_options or self.group['server'].get('rsync_options')
-            hub_remote = hub_remote or self.group['server'].get('hub_remote')
-
-        self.hub.remote_fn = hub_remote
-        self.hub.remote_dir = os.path.dirname(hub_remote)
-
-        self.hub.render()
+            remote_dir = remote_dir or self.group['server'].get('remote_dir')
+            port = port or self.group['server'].get('port')
+            staging = staging or self.group['server'].get('staging')
 
         if user == '$USER':
             user = os.environ.get('USER')
-        kwargs = dict(host=host, user=user, rsync_options=rsync_options)
 
-        upload_hub(hub=self.hub, **kwargs)
-        if not hub_only:
-            for track, level in self.hub.leaves(Track):
-                upload_track(track=track, **kwargs)
+        kwargs = dict(user=user, rsync_options=rsync_options, port=port,
+                      staging=staging)
+
+        upload_hub(self.hub, host, remote_dir, **kwargs)
 
         log("Hub can now be accessed via {0}"
             .format(self.hub.url), style=Fore.BLUE)

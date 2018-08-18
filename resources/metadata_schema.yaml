@@ -88,18 +88,20 @@ definitions:
                     start, stop, name), show the track in dense visibility mode
                     by default, and appear red (R, G, B color tuple).
                 default:
-                    tracktype: "bigBed 6"
-                    color: "255,0,0"
+                    tracktype: "bigWig"
+                    color: "255,128,0"
                     visibility: "dense"
             type:
                 type: string
                 description: |
                     Data type of `processed`. Must be one of the formats
                     supported by UCSC.
-                default: bigbed
+                default: bigwig
                 enum:
                     - bigbed
                     - bigwig
+                    - broadpeak
+                    - bed
                     - bam
                     - vcf
         required:
@@ -107,8 +109,6 @@ definitions:
             - short_label
             - original
             - processed
-            - script
-            - source
             - type
 
 properties:
@@ -167,7 +167,9 @@ properties:
                     where the data came from as well as any processing that was
                     needed to convert into a format supported by the UCSC
                     Genome Browser.
-                default: Example data were prepared ahead of time and are stored in the hubward repository to facilitate testing.
+                default: |
+                    Example data were prepared ahead of time and are stored
+                    in the hubward repository to facilitate testing.
 
         required:
             - label

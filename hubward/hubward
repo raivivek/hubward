@@ -60,17 +60,19 @@ def process(items):
             _group.process()
 
 
+#  @arg('--hub-only', help='Just update the hub text files, not data files')
 @arg('filename', help='Group config file')
-@arg('--hub-only', help='Just update the hub text files, not data files')
 @arg('--host', help='Host to upload to. Overrides [server][host] in the group '
      ' config file.')
+@arg('--staging', help='Directory to stage hub file. Overrides'
+    '[server][staging] in the group config file.')
 @arg('--user', help='User for host. Overrides [server][user] in the group '
      'config file.')
-@arg('--hub_remote', help='Remote filename for the top-level hub file. '
+@arg('--remote_dir', help='Remote filename for the top-level hub file. '
      'Overrides [server][hub_remote] in the config file.')
 @arg('--rsync_options', help='Options for rsync. Default is "%(default)s"')
-def upload(filename, hub_only=False, rsync_options='-avrL --progress',
-           host=None, user=None, hub_remote=None):
+def upload(filename, rsync_options='-avrL --progress',
+           host=None, port=22, user=None, remote_dir=None, staging=None):
     """
     Creates a track hub and uploads to configured host.
 
@@ -85,11 +87,12 @@ def upload(filename, hub_only=False, rsync_options='-avrL --progress',
     _group = hubward.models.Group(filename)
 
     _group.upload(
-        hub_only=hub_only,
         host=host,
+        remote_dir=remote_dir,
         user=user,
-        hub_remote=hub_remote,
+        port=port,
         rsync_options=rsync_options,
+        staging=staging
     )
 
 

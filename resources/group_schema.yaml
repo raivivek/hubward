@@ -73,14 +73,22 @@ properties:
                     username.
                 default: "$USER"
 
-            hub_remote:
+            remote_dir:
                 type: string
                 description: |
                     Path on `host` to rsync the track hub `hub.txt` file. This
                     file is expected to be served and accessible via the
                     `hub_url` configured above. Override at command line with
-                    `--hub_remote <FILENAME>`.
+                    `--remote_dir <FILENAME>`.
                 default: hub_dir/example.txt
+
+            staging:
+                type: string
+                description: |
+                    Path to the staging area; which can be manually copied to
+                    the destination server. The staged directory is uploaded
+                    to the server if `upload hub` option is used.
+                default: stage-dir/
 
     studies:
         type: array
