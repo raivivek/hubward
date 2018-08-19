@@ -48,7 +48,7 @@ class Data(object):
             self.script = os.path.join(reldir, obj['script'])
 
     def __str__(self):
-        return yaml.dump(self.obj)
+        return ruamel.yaml.dump(self.obj)
 
     def _needs_download(self):
         if not os.path.exists(self.original):
@@ -252,8 +252,9 @@ class Study(object):
         if not os.path.exists(fn):
             raise ValueError("Can't find {0}".format(fn))
 
-        self.metadata = yaml.load(open(fn))
-        schema = yaml.load(utils.get_resource('metadata_schema.yaml'))
+        self.metadata = ruamel.yaml.load(open(fn), Loader=ruamel.yaml.SafeLoader)
+        schema = ruamel.yaml.load(utils.get_resource('metadata_schema.yaml'),
+                Loader=ruamel.yaml.SafeLoader)
         jsonschema.validate(self.metadata, schema)
         self.study = self.metadata['study']
         self.label = self.metadata['study']['label']
@@ -292,7 +293,7 @@ class Study(object):
                 return os.path.join(prefix, filename)
 
     def __str__(self):
-        return yaml.dump(self.metadata)
+        return ruamel.yaml.dump(self.metadata)
 
     def _was_lifted_over(self):
         if os.path.exists(os.path.join(self.dirname, 'ORIGINAL-STUDY')):
@@ -460,13 +461,13 @@ class Study(object):
 
 class Group(object):
     def __init__(self, fn):
-        self.group = yaml.load(open(fn))
+        self.group = ruamel.yaml.load(open(fn), Loader=ruamel.yaml.SafeLoader)
         self.filename = fn
         self.dirname = os.path.dirname(fn)
         self.group.setdefault('short_label', self.group['name'])
         self.group.setdefault('long_label', self.group['name'])
 
-        schema = yaml.load(utils.get_resource('group_schema.yaml'))
+        schema = ruamel.yaml.load(utils.get_resource('group_schema.yaml'))
         jsonschema.validate(self.group, schema)
         self.studies = [
             Study(os.path.join(self.dirname, s))
@@ -513,12 +514,16 @@ class Group(object):
             user = os.environ.get('USER')
 
         if host == '$HOSTNAME':
-            host = os.uname().nodename
+            host = gethostname()
 
         kwargs = dict(user=user, rsync_options=rsync_options, port=port,
                       staging=staging)
 
-        upload_hub(self.hub, host, remote_dir, **kwargs)
+        if staging:
+            self.hub.render()
+            staging, linknames = stage_hub(self.hub, staging=staging)
+        else:
+            upload_hub(self.hub, host, remote_dir, **kwargs)
 
         log("Hub can now be accessed via {0}"
             .format(self.hub.url), style=Fore.BLUE)

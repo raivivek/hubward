@@ -168,8 +168,7 @@ properties:
                     needed to convert into a format supported by the UCSC
                     Genome Browser.
                 default: |
-                    Example data were prepared ahead of time and are stored
-                    in the hubward repository to facilitate testing.
+                    Example data stored in the hubward repository for testing.
 
         required:
             - label

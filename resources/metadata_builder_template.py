@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import yaml
+import ruamel.yaml
 import os
 
 d = {
@@ -36,7 +36,8 @@ d = {
         # This is by far the most verbose section, and is used to describe
         # where the data came from as well as any processing that was needed to
         # convert into a format supported by the UCSC Genome Browser.
-        'description': open('README.rst').read(),
+        'description': |
+            open('README.rst').read(),
     }
 }
 
@@ -94,4 +95,4 @@ for fn, description in FILENAMES:
         )
     )
 
-yaml.dump(d, open('metadata.yaml', 'w'), default_flow_style=False)
+ruamel.yaml.dump(d, open('metadata.yaml', 'w'), default_flow_style=False)

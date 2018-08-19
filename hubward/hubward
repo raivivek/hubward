@@ -71,8 +71,8 @@ def process(items):
 @arg('--remote_dir', help='Remote filename for the top-level hub file. '
      'Overrides [server][hub_remote] in the config file.')
 @arg('--rsync_options', help='Options for rsync. Default is "%(default)s"')
-def upload(filename, rsync_options='-avrL --progress',
-           host=None, port=22, user=None, remote_dir=None, staging=None):
+def upload(filename, rsync_options='-avrL --progress', host=None, port=22,
+        user=None, remote_dir=None, staging=None):
     """
     Creates a track hub and uploads to configured host.
 
@@ -235,8 +235,7 @@ def skeleton(dirname, use_metadata_builder=False):
     with open(tmp, 'w') as fout:
         fout.write(group_schema)
     with open(os.path.join(dirname, 'example-group.yaml'), 'w') as fout:
-        hubward.generate_config_from_schema.create_config(
-            tmp, fout)
+        hubward.generate_config_from_schema.create_config(tmp, fout)
     os.unlink(tmp)
 
     with open(os.path.join(dirname, 'README.rst'), 'w') as fout:
