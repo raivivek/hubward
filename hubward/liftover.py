@@ -2,12 +2,13 @@
 Module for converting genomic coordinates from one version of an assembly to
 another
 """
-import utils
 import subprocess
 import os
 import shutil
 import pybedtools
+
 from hubward.log import log
+from . import utils
 
 
 def download_chainfile(source_assembly, target_assembly):

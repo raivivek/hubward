@@ -1,6 +1,7 @@
-import liftover
-import utils
-from log import log
-import models
-import generate_config_from_schema
-from version import __version__
+from . import utils
+from . import liftover
+from . import models
+from . import generate_config_from_schema
+
+from .log import log
+from .version import __version__
